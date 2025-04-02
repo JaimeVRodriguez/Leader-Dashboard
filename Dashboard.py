@@ -32,6 +32,15 @@ if 'ghost_data' not in st.session_state:
         'risk': "No risks entered yet."
     }
 
+if 'platform_data' not in st.session_state:
+    st.session_state['platform_data'] = {
+        'initiative': 'Default Platform Initiative',
+        'metric_value': 0.0,
+        'metric_delta': 0.0,
+        'milestone': [],
+        'risk': 'No risks entered yet.'
+    }
+
 # --- Display Area ---
 st.markdown("---")
 
@@ -71,12 +80,12 @@ with st.expander("Project Status", expanded=False):
 
     with row2_vortex[1]:
         tile4_v = st.container(height=250, border=True)
-        tile4_v.subheader("❓ Open Questions / Risks")
+        tile4_v.subheader("❓ Blockers / Risks")
         tile4_v.write(v_data.get('risk', 'N/A'))
 
 
 # --- GhostMachine Dashboard Section ---
-st.header("GhostMachine Project Status")
+st.header("GhostMachine")
 with st.expander("Project Status", expanded=False):
     g_data = st.session_state['ghost_data'] # Shortcut
 
@@ -109,7 +118,27 @@ with st.expander("Project Status", expanded=False):
 
     with row2_ghost[1]:
         tile4_g = st.container(height=250, border=True)
-        tile4_g.subheader("❓ Open Questions / Risks")
+        tile4_g.subheader("❓ Blockers / Risks")
         tile4_g.write(g_data.get('risk', 'N/A'))
+
+
+st.header('Platform')
+with st.expander('Project Status', expanded=False):
+    p_data = st.session_state['platform_data']
+
+    row1_platform = st.columns(2)
+    row2_platform = st.columns(2)
+
+    with row1_platform[0]:
+        tile1_p = st.container(height=250, border=True)
+        tile1_p.subheader("Launch Initiatives")
+        tile1_p.write(p_data.get('initiative', 'N/A'))
+
+    with row1_platform[1]:
+        tile2_p = st.container(height=250, border=True)
+        tile2_p.subheader('Performance Metrics')
+        tile2_p.metric('Key Metric',
+                       value=p_data.get('metric_value', 0.0),
+                       delta=p_data.get('metric_delta', 0.0))
 
 st.sidebar.success("Select a project data entry page.")
