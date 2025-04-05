@@ -34,8 +34,6 @@ def query_hf_narrative_generation(prompt_text, api_token):
             "do_sample": True,         # Use sampling for more 'creative' output
             "temperature": 0.7,        # Controls randomness (lower = more focused)
             "top_p": 0.9,              # Nucleus sampling
-            # "min_length": 20,        # Optional: minimum generated length
-            # "repetition_penalty": 1.2 # Optional: Penalize repeating words
         }
     }
 
