@@ -1,4 +1,3 @@
-# pages/2_GhostMachine_Input.py
 import streamlit as st
 import datetime
 import requests
@@ -16,7 +15,7 @@ except KeyError:
         HF_API_TOKEN = None
 
 
-# --- Helper Function for API Call ---
+# --- API HELPER FUNCTION ---
 def query_hf_narrative_generation(prompt_text, api_token):
     """Sends a prompt to Hugging Face API for text generation."""
     if not api_token:
@@ -25,25 +24,22 @@ def query_hf_narrative_generation(prompt_text, api_token):
     headers = {"Authorization": f"Bearer {api_token}"}
     response_obj = None
 
-    # Define payload for text generation
-    # Adjust parameters as needed for desired output style
     payload = {
        "inputs": prompt_text,
         "parameters": {
-            "max_new_tokens": 75,      # Max tokens to GENERATE (adjust length)
-            "do_sample": True,         # Use sampling for more 'creative' output
-            "temperature": 0.7,        # Controls randomness (lower = more focused)
-            "top_p": 0.9,              # Nucleus sampling
+            "max_new_tokens": 75,
+            "do_sample": True,
+            "temperature": 0.7,
+            "top_p": 0.9,
         }
     }
 
     try:
-        response_obj = requests.post(API_URL, headers=headers, json=payload, timeout=30) # Increased timeout slightly
+        response_obj = requests.post(API_URL, headers=headers, json=payload, timeout=30)
         response_obj.raise_for_status()
-        # Text generation response format is often different
         return response_obj.json()
 
-    # --- Error handling remains largely the same, but check response format ---
+    # --- ERROR HANDLING ---
     except requests.exceptions.HTTPError as http_err:
         st.error(f"API Request failed with HTTP Status Code: {http_err.response.status_code}")
         error_details = f"Status Code: {http_err.response.status_code}"
@@ -51,7 +47,7 @@ def query_hf_narrative_generation(prompt_text, api_token):
             error_json = http_err.response.json()
             hf_error = error_json.get("error")
             estimated_time = error_json.get("estimated_time")
-            warnings = error_json.get("warnings") # Sometimes warnings are returned
+            warnings = error_json.get("warnings")
 
             detail_parts = []
             if hf_error:
@@ -60,7 +56,7 @@ def query_hf_narrative_generation(prompt_text, api_token):
                  detail_parts.append(f"Model may be loading (~{estimated_time:.0f}s wait suggested).")
             if warnings:
                  detail_parts.append(f"Warnings: {warnings}")
-            if not detail_parts: # If no specific fields, show raw error if simple
+            if not detail_parts: 
                  detail_parts.append(f"Response: {error_json}")
 
             error_details = f"{error_details}. {' '.join(detail_parts)}"
@@ -83,7 +79,6 @@ def query_hf_narrative_generation(prompt_text, api_token):
 st.set_page_config(page_title="GhostMachine Input", layout="centered")
 st.title("👻 GhostMachine Data Input Form")
 
-# Ensure the session state key exists
 if 'ghost_data' not in st.session_state:
     st.session_state['ghost_data'] = {
         'initiative': '', 
@@ -99,7 +94,7 @@ elif 'milestones' not in st.session_state.ghost_data or not isinstance(st.sessio
 
 st.markdown("Enter the latest information for the **GhostMachine** project below.")
 
-# Use a form
+# --- INPUT FORM ---
 with st.form("ghost_form"):
     st.subheader("Input Fields")
     initiative_input = st.text_area(
@@ -107,13 +102,13 @@ with st.form("ghost_form"):
         value=st.session_state['ghost_data'].get('initiative', ''),
         height=100
     )
-    # --- Summarization Section ---
+    # --- SUMMARIZATION SECTION ---
     col1_sum, col2_sum = st.columns([0.7, 0.3])
     with col1_sum:
-        st.write("**Initiative Narrative (Auto-Generated):**") # Label updated
+        st.write("**Initiative Narrative (Auto-Generated):**")
         st.text_area(
-            "Generated Narrative", # Label updated
-            value=st.session_state['ghost_data'].get('initiative_summary', 'Click "Generate Narrative" ->'), # Default text updated
+            "Generated Narrative",
+            value=st.session_state['ghost_data'].get('initiative_summary', 'Click "Generate Narrative" ->'),
             height=125,
             key="initiative_summary_display",
             disabled=True
@@ -121,55 +116,27 @@ with st.form("ghost_form"):
     with col2_sum:
         st.write("&nbsp;")
         generate_summary_disabled = not HF_API_TOKEN
-        # UPDATE Button Text and Help Text
         if st.form_submit_button("✨ Generate Narrative", help="Uses AI to write a narrative from the bullet points above", disabled=generate_summary_disabled): # Button text updated
             if initiative_input.strip():
-                # --- Construct the Prompt ---
-                prompt = f"""Write a short narrative (2-3 sentences) for a status update based on these points for the GhostMachine team: {initiative_input} """
-                # --- End Prompt Construction ---
+                prompt = f"""Write a short narrative for a status update based on these points for the GhostMachine team: {initiative_input} """
 
-                # --- DEBUG ---
-                print("-" * 20)
-                print(f"DEBUG: Prompt Sent to API:\n{prompt}")
-                print("-" * 20)
-                # --- End DEBUG ---
-
-                with st.spinner("Generating narrative..."): # Spinner text updated
-                    # --- Call the NEW function with the PROMPT ---
-                    # Pass the constructed 'prompt', not a payload dictionary
+                with st.spinner("Generating narrative..."):
                     generation_result = query_hf_narrative_generation(prompt, HF_API_TOKEN)
-                    # --- End Call ---
 
-                    # --- DEBUG ---
-                    print("-" * 20)
-                    print(f"DEBUG: Raw API Response Received:\n{generation_result}")
-                    print("-" * 20)
-                    # --- End DEBUG ---
-
-                    # --- Process the result for TEXT GENERATION ---
-                    generated_narrative = None # Initialize
+                    generated_narrative = None
                     if isinstance(generation_result, list) and generation_result:
-                        # EXPECTING format: [{'generated_text': '...'}]
                         generated_narrative = generation_result[0].get('generated_text')
                     elif isinstance(generation_result, dict) and "error" in generation_result:
-                        # Error already handled within the function, but display here
                         st.error(f"Narrative generation failed: {generation_result['error']}")
-                    else: # Handle other unexpected formats if needed
+                    else:
                         st.error("Narrative generation failed. Unexpected response format.")
-                        st.write("API Response:", generation_result) # Debugging
+                        st.write("API Response:", generation_result)
 
-                    # If successful, update state and show toast
                     if generated_narrative:
-                         # --- DEBUG ---
-                         print("-" * 20)
-                         print(f"DEBUG: Extracted Narrative:\n{generated_narrative}")
-                         print("-" * 20)
-                         # --- End DEBUG ---
-                         st.session_state['ghost_data']['initiative_summary'] = generated_narrative.strip() # Store the result
-                         st.toast("Narrative generated!") # Toast updated
+                         st.session_state['ghost_data']['initiative_summary'] = generated_narrative.strip() 
+                         st.toast("Narrative generated!") 
                          st.rerun()
                     elif not (isinstance(generation_result, dict) and "error" in generation_result):
-                         # Clear previous narrative only if no specific error was already shown
                          st.session_state['ghost_data']['initiative_summary'] = ""
 
             else:
@@ -192,11 +159,9 @@ with st.form("ghost_form"):
         height=150
     )
 
-    # Submit button
     submitted = st.form_submit_button("Save GhostMachine Data")
 
     if submitted:
-        # Update session state
         st.session_state['ghost_data']['initiative'] = initiative_input
         st.session_state['ghost_data']['metric_value'] = metric_val_input
         st.session_state['ghost_data']['metric_delta'] = metric_delta_input
@@ -204,56 +169,43 @@ with st.form("ghost_form"):
 
         st.success("GhostMachine data updated successfully!")
         st.toast("Data saved!")
-        # st.query_params["updated"] = str(datetime.datetime.now())
 
 
-
-# --- Milestone Management Section (Below the form) ---
+# --- MILESTIONE MANAGEMENT ---
 st.markdown("---")
 st.subheader("📅 Upcoming Milestones Management")
 
-# Get the current list
 milestone_list = st.session_state.ghost_data['milestones']
 
-# --- Display Existing Milestones with Remove Buttons ---
 st.write("**Current Milestones:**")
 if not milestone_list:
     st.caption("No milestones added yet.")
 
-# Sort by date before displaying
 sorted_milestones = sorted(milestone_list, key=lambda m: m['date'])
 
 indices_to_remove = []
 for i, m in enumerate(sorted_milestones):
     col1, col2, col3 = st.columns([0.25, 0.6, 0.15])
-    # Find the original index in the unsorted list to ensure correct removal
     original_index = milestone_list.index(m)
     with col1:
-        st.write(m['date'].strftime('%Y-%m-%d')) # Display date
+        st.write(m['date'].strftime('%Y-%m-%d'))
     with col2:
-        st.write(m['desc']) # Display description
+        st.write(m['desc'])
     with col3:
-        # Use the original index in the key and for removal logic
         if st.button("Remove", key=f"remove_m_{original_index}", help=f"Remove milestone: {m['desc']}"):
             indices_to_remove.append(original_index)
 
-# Remove items outside the loop (modify list while iterating is bad)
 if indices_to_remove:
-    # Remove in reverse order of original indices to avoid messing up subsequent indices
     indices_to_remove.sort(reverse=True)
     for index in indices_to_remove:
          st.session_state.ghost_data['milestones'].pop(index)
     st.toast("Milestone(s) removed.")
-    st.rerun() # Rerun to update the display immediately
+    st.rerun()
 
-
-
-# --- Input for New Milestone ---
 st.write("**Add New Milestone:**")
 col_date, col_desc, col_add = st.columns([0.3, 0.55, 0.15])
 
 with col_date:
-    # Use session state to potentially preserve input if page reruns unexpectedly
     if 'new_m_date_gm' not in st.session_state:
         st.session_state.new_m_date_gm = datetime.date.today()
     new_milestone_date_gm = st.date_input("Date", value=st.session_state.new_m_date_gm, key="new_milestone_date_input_gm")
@@ -264,18 +216,17 @@ with col_desc:
     new_milestone_desc_gm = st.text_input("Description", value=st.session_state.new_m_desc_gm, key="new_milestone_desc_input_gm", placeholder="Enter milestone detail")
 
 with col_add:
-    st.write(" &nbsp; ") # Add space for alignment
+    st.write(" &nbsp; ") 
     if st.button("Add", key="add_milestone_button_gm"):
-        if new_milestone_desc_gm: # Only add if description is not empty
+        if new_milestone_desc_gm:
             st.session_state.ghost_data['milestones'].append({
                 'date': new_milestone_date_gm,
                 'desc': new_milestone_desc_gm
             })
-            # Clear the input fields by resetting their session state keys
-            st.session_state.new_m_date_gm = datetime.date.today() # Reset date
-            st.session_state.new_m_desc_gm = "" # Reset description
+            st.session_state.new_m_date_gm = datetime.date.today() 
+            st.session_state.new_m_desc_gm = "" 
             st.success(f"Added milestone: {new_milestone_desc_gm}")
             st.toast("Milestone added!")
-            st.rerun() # Rerun script to update the list display and clear inputs
+            st.rerun()
         else:
             st.warning("Please enter a description for the milestone.")
