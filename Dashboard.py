@@ -29,7 +29,8 @@ if 'ghost_data' not in st.session_state:
         'metric_value': 0.0,
         'metric_delta': 0.0,
         'milestone': [],
-        'risk': "No risks entered yet."
+        'risk': "No risks entered yet.",
+        'initiative_summary': ''
     }
 
 if 'platform_data' not in st.session_state:
@@ -95,7 +96,7 @@ with st.expander("Project Status", expanded=False):
     with row1_ghost[0]:
         tile1_g = st.container(height=250, border=True)
         tile1_g.subheader("🚀 Launch Initiatives")
-        tile1_g.write(g_data.get('initiative', 'N/A'))
+        tile1_g.write(g_data.get('initiative_summary', 'N/A'))
 
     with row1_ghost[1]:
         tile2_g = st.container(height=250, border=True)
