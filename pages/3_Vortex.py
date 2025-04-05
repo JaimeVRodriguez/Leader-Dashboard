@@ -1,33 +1,83 @@
-# pages/1_Vortex_Input.py
 import streamlit as st
-import datetime # To add a timestamp
+import datetime
+import os
+from hf_utils import query_hf_narrative_generation
 
 st.set_page_config(page_title="Vortex Input", layout="centered")
-st.title("🌀 Vortex Data Input Form")
 
-# Ensure the session state key exists (it should have been created by app.py)
+try:
+    HF_API_TOKEN = st.secrets['HUGGINGFACE_API_TOKEN']
+except KeyError:
+    HF_API_TOKEN = os.environ.get('HUGGINGFACE_API_TOKEN')
+    if not HF_API_TOKEN:
+        st.error('Hugging Face API Token not found')
+        HF_API_TOKEN = None
+
+st.title('🌀 Vortex Data Input Form')
+
 if 'vortex_data' not in st.session_state:
-    # Fallback initialization if this page is visited first (less ideal)
     st.session_state['vortex_data'] = {
-        'initiative': "", 
+        'update_bullets': '', 
         'metric_value': 0.0, 
         'metric_delta': 0.0,
         'milestone': [], 
-        'risk': ""
+        'risk': '',
+        'update_summary': ''
     }
 elif 'milestones' not in st.session_state.vortex_data or not isinstance(st.session_state.vortex_data['milestones'], list):
      st.session_state.vortex_data['milestones'] = []
 
 st.markdown("Enter the latest information for the **Vortex** project below.")
 
-# Use a form to group inputs
+# --- INPUT FORM ---
 with st.form("vortex_form"):
     st.subheader("Input Fields")
-    initiative_input = st.text_area(
-        "🚀 Launch Initiatives",
-        value=st.session_state['vortex_data'].get('initiative', ''), # Pre-fill with current data
+    update_input = st.text_area(
+        "🚀 Project Updates",
+        value=st.session_state['vortex_data'].get('update_bullets', ''),
         height=100
     )
+    #--- SUMMARIZATION SECTION ---
+    col1_sum, col2_sum = st.columns([0.7, 0.3])
+    with col1_sum:
+        st.write('**Project Update Narrative (Auto-Generated):**')
+        st.text_area(
+            'Generated Update',
+            value=st.session_state['vortex_data'].get('update_summary', 'Click "Generate Update" ->'),
+            height=125,
+            key='update_summary_display',
+            disabled=True
+        )
+    with col2_sum:
+        st.write('&nbsp;')
+        generate_update_disabled = not HF_API_TOKEN
+        if st.form_submit_button('✨ Generate Narrative', help='Uses AI to write a narrative from the bullet points provided', disabled=generate_update_disabled):
+            if update_input.strip():
+                prompt = f"""Write a short narrative for a status update based on these points for the Vortex team: {update_input} """
+
+                with st.spinner('Generating update...'):
+                    generation_result = query_hf_narrative_generation(prompt, HF_API_TOKEN)
+
+                    generated_update = None
+                    if isinstance(generation_result, list) and generation_result:
+                        generated_update = generation_result[0].get('generated_text')
+                    elif isinstance(generation_result, dict) and 'error' in generation_result:
+                        st.error(f'Narrative generation failed: {generation_result['error']}')
+                    else:
+                        st.error('Narrative generation failed. Unexpected response format.')
+                        st.write('API Response:', generation_result)
+                    
+                    if generated_update:
+                        st.session_state['vortex_data']['update_summary'] = generated_update.strip()
+                        st.toast('Update generated!')
+                        st.rerun()
+                    elif not (isinstance(generation_result, dict) and 'error' in generation_result):
+                        st.session_state['vortex_data']['update_summary'] = ''
+
+            else:
+                st.warning('Please enter some update points to generate a update.')
+                st.session_state['vortex_data']['update_summary'] = ""
+
     metric_val_input = st.number_input(
         "📊 Key Metric Value",
         value=st.session_state['vortex_data'].get('metric_value', 0.0),
@@ -49,7 +99,7 @@ with st.form("vortex_form"):
 
     if submitted:
         # Update the session state dictionary with the new values
-        st.session_state['vortex_data']['initiative'] = initiative_input
+        st.session_state['vortex_data']['update_bullets'] = update_input
         st.session_state['vortex_data']['metric_value'] = metric_val_input
         st.session_state['vortex_data']['metric_delta'] = metric_delta_input
         st.session_state['vortex_data']['risk'] = risk_input

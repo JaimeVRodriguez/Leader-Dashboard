@@ -16,11 +16,12 @@ st.caption(f"Data shown reflects the current session. Last updated: {st.query_pa
 # Initialize if they don't exist yet
 if 'vortex_data' not in st.session_state:
     st.session_state['vortex_data'] = {
-        'initiative': "Default Vortex Initiative",
+        'update_bullets': "Default Vortex Update",
         'metric_value': 0.0,
         'metric_delta': 0.0,
         'milestone': [],
-        'risk': "No risks entered yet."
+        'risk': "No risks entered yet.",
+        'update_summary': ''
     }
 
 if 'ghost_data' not in st.session_state:
@@ -56,7 +57,7 @@ with st.expander("Project Status", expanded=False):
     with row1_vortex[0]:
         tile1_v = st.container(height=250, border=True)
         tile1_v.subheader("🚀 Launch Initiatives")
-        tile1_v.write(v_data.get('initiative', 'N/A'))
+        tile1_v.write(v_data.get('update_summary', 'N/A'))
 
     with row1_vortex[1]:
         tile2_v = st.container(height=250, border=True)

@@ -1,6 +1,5 @@
 import streamlit as st
 import datetime
-import requests
 import os
 from hf_utils import query_hf_narrative_generation
 
@@ -54,7 +53,7 @@ with st.form("ghost_form"):
     with col2_sum:
         st.write("&nbsp;")
         generate_summary_disabled = not HF_API_TOKEN
-        if st.form_submit_button("✨ Generate Narrative", help="Uses AI to write a narrative from the bullet points above", disabled=generate_summary_disabled): # Button text updated
+        if st.form_submit_button("✨ Generate Narrative", help="Uses AI to write a narrative from the bullet points above", disabled=generate_summary_disabled):
             if initiative_input.strip():
                 prompt = f"""Write a short narrative for a status update based on these points for the GhostMachine team: {initiative_input} """
 
