@@ -62,9 +62,9 @@ with st.form("vortex_form"):
                     if isinstance(generation_result, list) and generation_result:
                         generated_update = generation_result[0].get('generated_text')
                     elif isinstance(generation_result, dict) and 'error' in generation_result:
-                        st.error(f'Narrative generation failed: {generation_result['error']}')
+                        st.error(f'Update generation failed: {generation_result['error']}')
                     else:
-                        st.error('Narrative generation failed. Unexpected response format.')
+                        st.error('Update generation failed. Unexpected response format.')
                         st.write('API Response:', generation_result)
                     
                     if generated_update:
