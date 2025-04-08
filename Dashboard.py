@@ -9,10 +9,9 @@ st.set_page_config(
 )
 
 st.title("AI Division Leader Sync Dashboard")
-st.caption(f"Data shown reflects the current session. Last updated: {st.query_params.get('updated', 'N/A')}") # Simple way to show refresh
+st.caption(f"Data shown reflects the current session. Last updated: {st.query_params.get('updated', 'N/A')}")
 
 # --- Initialize Session State ---
-# We'll store data in dictionaries within session_state
 # Initialize if they don't exist yet
 if 'vortex_data' not in st.session_state:
     st.session_state['vortex_data'] = {
@@ -45,6 +44,45 @@ if 'platform_data' not in st.session_state:
 
 # --- Display Area ---
 st.markdown("---")
+
+# --- Platform Dashboard Section ---
+st.header('Platform')
+with st.expander('Project Status', expanded=False):
+    p_data = st.session_state['platform_data']
+
+    row1_platform = st.columns(2)
+    row2_platform = st.columns(2)
+
+    with row1_platform[0]:
+        tile1_p = st.container(height=250, border=True)
+        tile1_p.subheader("Launch Initiatives")
+        tile1_p.write(p_data.get('initiative', 'N/A'))
+
+    with row1_platform[1]:
+        tile2_p = st.container(height=250, border=True)
+        tile2_p.subheader('Performance Metrics')
+        tile2_p.metric('Key Metric',
+                       value=p_data.get('metric_value', 0.0),
+                       delta=p_data.get('metric_delta', 0.0))
+
+    with row2_platform[0]:
+        tile3_p = st.container(height=250, border=True)
+        tile3_p.subheader("📅 Upcoming Milestones")
+        milestones_list = p_data.get('milestones', [])
+        if milestones_list:
+            sorted_milestones = sorted(milestones_list, key=lambda m: m['date'])
+            for i, m in enumerate(sorted_milestones):
+                date_str = m['date'].strftime('%Y-%m-%d')
+                tile3_p.write(f"**{date_str}:** {m['desc']}")
+        else:
+            tile3_p.write('No milesones entered yet.')
+
+    with row2_platform[1]:
+        title4_p = st.container(height=250, border=True)
+        title4_p.subheader("❓ Blockers / Risks")
+        title4_p.write(p_data.get('risk', 'N/A'))
+
+
 
 # --- Vortex Dashboard Section ---
 st.header("Vortex")
@@ -122,6 +160,7 @@ with st.expander("Project Status", expanded=False):
         tile4_g = st.container(height=250, border=True)
         tile4_g.subheader("❓ Blockers / Risks")
         tile4_g.write(g_data.get('risk', 'N/A'))
+
 
 # --- Platform Dashboard Section ---
 st.header('Platform')
