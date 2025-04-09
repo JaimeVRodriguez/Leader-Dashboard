@@ -8,7 +8,7 @@ from hf_utils import query_hf_narrative_generation
 st.set_page_config(page_title="GhostMachine Input", layout="centered")
 
 # --- DATABASE CONNECTION ---
-DB_URL = st.secrets.get("DATABASE_URL") # Ensure secret key name matches!
+DB_URL = st.secrets.get("DATABASE_URL")
 if not DB_URL:
     st.error("🚨 DATABASE_URL not found in Streamlit Secrets! Cannot connect to database.")
     st.stop()
@@ -21,6 +21,8 @@ except Exception as e:
 
 PROJECT_ID = 'ghostmachine_main'
 
+
+# --- API CONNECTION ---
 try:
     HF_API_TOKEN = st.secrets['HUGGINGFACE_API_TOKEN']
 except KeyError:
@@ -29,22 +31,11 @@ except KeyError:
         st.error('Hugging Face API Token not found')
         HF_API_TOKEN = None
 
-
+# --- LOAD DATA FUNCTION ---
 def load_data_from_db():
     print(f"Attempting to load data for {PROJECT_ID}...")
     df = None
     try:
-        # --- Temporarily clear cache for debugging ---
-        try:
-            conn.clear_cache()
-            print("Cache cleared for conn.query.")
-        except Exception as e:
-            print(f"Note: Could not clear cache (might be okay): {e}")
-        # --- End Cache Clear ---
-
-        # Define the SQL query as a plain string
-        # Use placeholders like :key which match the keys in the params dict
-        # LIST YOUR ACTUAL COLUMN NAMES HERE
         query_string = """
             SELECT
                 project_id, update_bullets, metric_value, metric_delta,
@@ -52,65 +43,46 @@ def load_data_from_db():
             FROM ghostmachine_data
             WHERE project_id = :proj_id
         """
-        # Define the parameters separately
         params = {'proj_id': PROJECT_ID}
 
-        # Pass the query string and params dict to conn.query
-        # Keep ttl=0 during debugging
+
         df = conn.query(query_string, params=params, ttl=0)
-        print("Query executed.")
-
-        # --- Debug: Show the retrieved DataFrame ---
-        print(f"DataFrame shape: {df.shape if df is not None else 'None'}")
-        if df is not None:
-            print("DataFrame head:")
-            print(df.head())
-            # Temporarily write to UI for easy viewing during debug
-            # Ensure this line is placed appropriately if you have sidebar/columns defined
-            # st.sidebar.expander("Debug Info: Loaded DataFrame").dataframe(df)
-            # Or just print:
-            if df.empty:
-                 print("[Debug] Loaded DataFrame is EMPTY")
-            else:
-                 print("[Debug] Loaded DataFrame:")
-                 print(df.to_string()) # Print full dataframe to terminal
-
-        # --- End Debug ---
 
         if df is not None and not df.empty:
             project_data = df.iloc[0].to_dict()
             print(f"Raw data found: {project_data}")
 
-            # Handle milestones (JSONB should load as dict/list)
             milestones = project_data.get('milestones')
             if milestones is None or milestones == {}:
                 project_data['milestones'] = []
-                print("Milestones were None or {}, set to empty list []")
             elif isinstance(milestones, str):
                 try: 
                     project_data['milestones'] = json.loads(milestones)
-                    print("Milestones parsed from JSON string.")
                 except json.JSONDecodeError:
-                    print("Warning: Failed to parse milestones JSON string.")
                     project_data['milestones'] = []
 
-            # Use YOUR desired keys for defaults and session state
             defaults = {
-                'update_bullets': '', 'metric_value': 0.0, 'metric_delta': 0.0,
-                'risk': '', 'update_summary': '', 'milestones': []
+                'update_bullets': '', 
+                'metric_value': 0.0, 
+                'metric_delta': 0.0,
+                'risk': '', 
+                'update_summary': '', 
+                'milestones': []
             }
             session_data = {**defaults, **project_data}
-            session_data['project_id'] = PROJECT_ID # Ensure project_id is present
+            session_data['project_id'] = PROJECT_ID
 
-            print(f"Data prepared for session state: {session_data}")
             st.session_state['ghostmachine_data'] = session_data
-            print(f"Session state 'ghostmachine_data' updated from DB.")
 
         else:
-            print(f"No data found for {PROJECT_ID}. Initializing default session state.")
             st.session_state['ghostmachine_data'] = {
-                'project_id': PROJECT_ID, 'update_bullets': '', 'metric_value': 0.0,
-                'metric_delta': 0.0, 'milestones': [], 'risk': '', 'update_summary': ''
+                'project_id': PROJECT_ID, 
+                'update_bullets': '', 
+                'metric_value': 0.0,
+                'metric_delta': 0.0, 
+                'milestones': [], 
+                'risk': '', 
+                'update_summary': ''
             }
 
     except Exception as e:
@@ -119,11 +91,16 @@ def load_data_from_db():
         traceback.print_exc()
         if 'ghostmachine_data' not in st.session_state:
              st.session_state['ghostmachine_data'] = {
-                'project_id': PROJECT_ID, 'update_bullets': '', 'metric_value': 0.0,
-                'metric_delta': 0.0, 'milestones': [], 'risk': '', 'update_summary': ''
+                'project_id': PROJECT_ID, 
+                'update_bullets': '', 
+                'metric_value': 0.0,
+                'metric_delta': 0.0, 
+                'milestones': [], 
+                'risk': '', 
+                'update_summary': ''
             }
 
-# --- Load data once per session ---
+# --- LOAD DATA---
 if 'ghostmachine_data' not in st.session_state:
     load_data_from_db()
 
@@ -249,22 +226,17 @@ with st.form("ghostmachine_form"):
                     'upbu': current_data['update_bullets'],
                     'mv': current_data['metric_value'],
                     'md': current_data['metric_delta'],
-                    # Pass the Python list/dict directly, SQLAlchemy handles JSONB conversion
                     'ms': current_data['milestones'],
                     'rsk': current_data['risk'],
                     'upsum': current_data['update_summary'],
                     'ts': current_data['last_updated']
                 }
                 s.execute(sql_upsert, params)
-                s.commit() # Commit the transaction
+                s.commit()
             st.success("GhostMachine data saved successfully!")
             st.toast("Data saved!")
-            # Optional: Clear cache if you want subsequent loads to get fresh data immediately
-            # conn.clear_cache()
         except Exception as e:
             st.error(f"🚨 Failed to save data to PostgreSQL: {e}")
-    
-
 
 # --- MILESTIONE MANAGEMENT ---
 st.markdown("---")
