@@ -40,7 +40,7 @@ def load_data_from_db():
             SELECT
                 project_id, update_bullets, metric_value, metric_delta,
                 milestones, risk, update_summary, last_updated
-            FROM vortex_data
+            FROM dashboard_data
             WHERE project_id = :proj_id
         """
         params = {'proj_id': PROJECT_ID}
