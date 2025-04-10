@@ -171,22 +171,55 @@ with st.form('vortex_form'):
         height=150
     )
 
-    # Submit button for the form
     submitted = st.form_submit_button('Save Vortex Data')
 
     if submitted:
-        # Update the session state dictionary with the new values
-        st.session_state['vortex_data']['update_bullets'] = update_input
-        st.session_state['vortex_data']['metric_value'] = metric_val_input
-        st.session_state['vortex_data']['metric_delta'] = metric_delta_input
-        st.session_state['vortex_data']['risk'] = risk_input
+        current_data = {
+            'project_id': PROJECT_ID,
+            'update_bullets': update_input,
+            'metric_value': metric_val_input,
+            'metric_delta': metric_delta_input,
+            'milestones': st.session_state.vortex_data.get('milestones', []),
+            'risk': risk_input,
+            'update_summary': st.session_state.vortex_data.get('update_summary', ''),
+            'last_updated': datetime.datetime.now(datetime.timezone.utc)
+        }
 
-        st.success('Vortex data updated successfully!')
-        st.toast("Data saved!")
+        st.session_state['vortex_data'] = current_data.copy()
 
-        # Add a query parameter to slightly force refresh perception on main page (optional)
-        # Note: This is a simple trick, might not always trigger full re-render as expected
-        # st.query_params["updated"] = str(datetime.datetime.now())
+        try:
+            with conn.session as s:
+                sql_upsert = sqlalchemy.text("""
+                    INSERT INTO vortex_data (
+                        project_id, update_bullets, metric_value, metric_delta, milestones, risk, update_summary, last_updated
+                    ) VALUES (
+                        :pid, :upbu, :mv, :md, :ms, :rsk, :upsum, :ts
+                    )
+                    ON CONFLICT (project_id) DO UPDATE SET
+                        update_bullets = EXCLUDED.update_bullets,
+                        metric_value = EXCLUDED.metric_value,
+                        metric_delta = EXCLUDED.metric_delta,
+                        milestones = EXCLUDED.milestones,
+                        risk = EXCLUDED.risk,
+                        update_summary = EXCLUDED.update_summary,
+                        last_updated = EXCLUDED.last_updated;
+                """)
+                params = {
+                    'pid': current_data['project_id'],
+                    'upbu': current_data['update_bullets'],
+                    'mv': current_data['metric_value'],
+                    'md': current_data['metric_delta'],
+                    'ms': current_data['milestones'],
+                    'rsk': current_data['risk'],
+                    'upsum': current_data['update_summary'],
+                    'ts': current_data['last_updated']
+                }
+                s.execute(sql_upsert, params)
+                s.commit()
+            st.success('Vortex data updated successfully!')
+            st.toast("Data saved!")
+        except Exception as e:
+            st.error(f"🚨 Failed to save data to PostgreSQL: {e}")
 
 # --- Milestone Management Section (Below the form) ---
 st.markdown('---')
