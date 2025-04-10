@@ -5,8 +5,15 @@ import altair as alt
 st.set_page_config(page_title='Galvanize Input', layout='wide')
 st.title('Galvanize Data Input Form')
 
+empty_df = pd.DataFrame(columns=[
+    'course', 
+    'cohort', 
+    'first_name', 
+    'last_name', 
+    'status', 
+    'in_utilization'
+    ])
 
-empty_df = pd.DataFrame(columns=['course', 'cohort', 'first_name', 'last_name', 'status', 'in_utilization'])
 empty_df = empty_df.astype({
     'course': 'object',
     'cohort': 'object',
@@ -62,6 +69,7 @@ st.write('Data Entered')
 if not edited_df.empty:
     status_counts = edited_df.groupby(['course', 'status']).size().reset_index(name='count')
     unique_statuses = status_counts['status'].unique().tolist()
+
     color_palette = {
         'Graduated': '#1f77b4',
         'In-Progress': '#2ca02c',
@@ -82,8 +90,6 @@ if not edited_df.empty:
     )
 
     st.altair_chart(chart, use_container_width=True)
-
-    
 
     st.write('Data For Chart:')
     st.dataframe(status_counts)
