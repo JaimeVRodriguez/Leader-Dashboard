@@ -73,7 +73,6 @@ def load_data_from_db():
             session_data['project_id'] = PROJECT_ID
 
             st.session_state['ghostmachine_data'] = session_data
-            st.rerun()
 
         else:
             st.session_state['ghostmachine_data'] = {
@@ -102,8 +101,7 @@ def load_data_from_db():
             }
 
 # --- LOAD DATA---
-if 'ghostmachine_data' not in st.session_state:
-    load_data_from_db()
+load_data_from_db()
 
 
 st.title("👻 GhostMachine Data Input Form")
