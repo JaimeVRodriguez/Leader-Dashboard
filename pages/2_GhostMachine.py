@@ -190,7 +190,7 @@ with st.form("ghostmachine_form"):
         try:
             with conn.session as s: 
                 sql_upsert = sqlalchemy.text("""
-                    INSERT INTO ghostmachine_data (
+                    INSERT INTO dashboard_data (
                         project_id, update_bullets, metric_value, metric_delta, milestones, risk, update_summary, last_updated
                     ) VALUES (
                         :pid, :upbu, :mv, :md, :ms, :rsk, :upsum, :ts
