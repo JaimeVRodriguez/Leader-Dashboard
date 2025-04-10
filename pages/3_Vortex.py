@@ -1,10 +1,28 @@
 import streamlit as st
 import datetime
 import os
+import json
+import sqlalchemy
 from hf_utils import query_hf_narrative_generation
 
 st.set_page_config(page_title='Vortex Input', layout='centered')
 
+# --- DATABASE CONNECTION ---
+DB_URL = st.secrets.get("DATABASE_URL")
+if not DB_URL:
+    st.error("🚨 DATABASE_URL not found in Streamlit Secrets! Cannot connect to database.")
+    st.stop()
+
+try:
+    conn = st.connection('postgres', type='sql', url=DB_URL)
+except Exception as e:
+    st.error(f"🚨 Failed to connect to the database: {e}")
+    st.stop()
+
+PROJECT_ID = 'vortex_main'
+
+
+# --- API CONNECTION ---
 try:
     HF_API_TOKEN = st.secrets['HUGGINGFACE_API_TOKEN']
 except KeyError:
@@ -12,6 +30,77 @@ except KeyError:
     if not HF_API_TOKEN:
         st.error('Hugging Face API Token not found')
         HF_API_TOKEN = None
+
+
+# --- LOAD DATA FUNCTION ---
+def load_data_from_db():
+    df = None
+    try:
+        query_string ="""
+            SELECT
+                project_id, update_bullets, metric_value, metric_delta,
+                milestones, risk, update_summary, last_updated
+            FROM vortex_data
+            WHERE project_id = :proj_id
+        """
+        params = {'proj_id': PROJECT_ID}
+
+        df = conn.query(query_string, params=params, ttl=0)
+
+        if df is not None and not df.empty:
+            project_data = df.iloc[0].to_dict()
+
+            milestones = project_data.get('milestones')
+            if milestones is None or milestones == {}:
+                project_data['milestones'] = []
+            elif isinstance(milestones, str):
+                try:
+                    project_data['milestones'] = json.loads(milestones)
+                except json.JSONDecodeError:
+                    project_data['milestones'] = []
+
+            defaults = {
+                'update_bullets': '', 
+                'metric_value': 0.0, 
+                'metric_delta': 0.0,
+                'risk': '', 
+                'update_summary': '', 
+                'milestones': []
+            }
+            session_data = {**defaults, **project_data}
+            session_data['project_id'] = PROJECT_ID
+
+            st.session_state['vortex_data'] = session_data
+
+        else:
+            st.session_state['vortex_data'] = {
+                'project_id': PROJECT_ID, 
+                'update_bullets': '', 
+                'metric_value': 0.0,
+                'metric_delta': 0.0, 
+                'milestones': [], 
+                'risk': '', 
+                'update_summary': ''
+            }
+
+    except Exception as e:
+        st.error(f"🚨 Error during data loading: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'vortex_data' not in st.session_state:
+             st.session_state['vortex_data'] = {
+                'project_id': PROJECT_ID, 
+                'update_bullets': '', 
+                'metric_value': 0.0,
+                'metric_delta': 0.0, 
+                'milestones': [], 
+                'risk': '', 
+                'update_summary': ''
+            }
+             
+# --- LOAD DATA ---
+load_data_from_db()
+
 
 st.title('🌀 Vortex Data Input Form')
 

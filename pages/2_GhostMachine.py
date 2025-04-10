@@ -33,7 +33,6 @@ except KeyError:
 
 # --- LOAD DATA FUNCTION ---
 def load_data_from_db():
-    print(f"Attempting to load data for {PROJECT_ID}...")
     df = None
     try:
         query_string = """
@@ -45,12 +44,10 @@ def load_data_from_db():
         """
         params = {'proj_id': PROJECT_ID}
 
-
         df = conn.query(query_string, params=params, ttl=0)
 
         if df is not None and not df.empty:
             project_data = df.iloc[0].to_dict()
-            print(f"Raw data found: {project_data}")
 
             milestones = project_data.get('milestones')
             if milestones is None or milestones == {}:
@@ -105,19 +102,6 @@ load_data_from_db()
 
 
 st.title("👻 GhostMachine Data Input Form")
-
-# if 'ghostmachine_data' not in st.session_state:
-#     st.session_state['ghostmachine_data'] = {
-#         'update_bullets': '', 
-#         'metric_value': 0.0, 
-#         'metric_delta': 0.0,
-#         'milestone': [], 
-#         'risk': '',
-#         'update_summary': ''
-
-#     }
-# elif 'milestones' not in st.session_state.ghostmachine_data or not isinstance(st.session_state.ghostmachine_data['milestones'], list):
-#     st.session_state.ghostmachine_data['milestones'] = []
 
 st.markdown("Enter the latest information for the **GhostMachine** project below.")
 
