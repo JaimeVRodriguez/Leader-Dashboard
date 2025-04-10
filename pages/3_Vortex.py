@@ -104,18 +104,6 @@ load_data_from_db()
 
 st.title('🌀 Vortex Data Input Form')
 
-if 'vortex_data' not in st.session_state:
-    st.session_state['vortex_data'] = {
-        'update_bullets': '', 
-        'metric_value': 0.0, 
-        'metric_delta': 0.0,
-        'milestone': [], 
-        'risk': '',
-        'update_summary': ''
-    }
-elif 'milestones' not in st.session_state.vortex_data or not isinstance(st.session_state.vortex_data['milestones'], list):
-     st.session_state.vortex_data['milestones'] = []
-
 st.markdown('Enter the latest information for the **Vortex** project below.')
 
 # --- INPUT FORM ---
