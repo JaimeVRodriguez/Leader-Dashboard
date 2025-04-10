@@ -73,6 +73,7 @@ def load_data_from_db():
             session_data['project_id'] = PROJECT_ID
 
             st.session_state['ghostmachine_data'] = session_data
+            st.rerun()
 
         else:
             st.session_state['ghostmachine_data'] = {
