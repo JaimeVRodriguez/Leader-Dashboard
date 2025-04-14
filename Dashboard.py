@@ -1,12 +1,23 @@
 # app.py
 import streamlit as st
 
-# --- Page Configuration ---
+# --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="AI Division Sync",
     page_icon="📊",
     layout="wide"
 )
+
+DB_URL = st.secrets.get('DATABASE_URL')
+if not DB_URL:
+    st.error('🚨 DATABASE_URL not found in Streamlit Secrets! Cannot connect to database.')
+    st.stop()
+
+try:
+    conn = st.connection('postgres', type='sql', url=DB_URL)
+except Exception as e:
+    st.error(f'🚨 Failed to connect to the database: {e}')
+    st.stop()
 
 st.title("AI Division Leader Sync Dashboard")
 st.caption(f"Data shown reflects the current session. Last updated: {st.query_params.get('updated', 'N/A')}")
